@@ -43,13 +43,15 @@ The path must point to the folder containing the libraries, not to an individual
 
 | Folder | Contents analyzed | Required |
 | --- | --- | --- |
-| `Rigs` | `.rig` rigs and their references | Yes |
+| `Rigs` | JSON `.rig` files and their references | Yes |
 | `Impulse Responses` | `.wav` resources | Yes |
 | `Amp Clones` | `.ac` resources | Yes |
 | `Neural Amp Modeler` | `.nam` resources | No |
-| `Blocks` | Presets saved in JSON format | No |
+| `Blocks` | Every file is parsed as a JSON preset, regardless of extension | No |
 
-Folder names are matched case-insensitively.
+These top-level folder names and resource file extensions are matched case-insensitively. Scans include subfolders. Hidden files and folders are skipped in resource libraries, but included when scanning rigs and `Blocks`; `.DS_Store` and files beginning with `._` are always ignored.
+
+Each `.rig` file must contain a JSON object with a `content` field that is either an object or a JSON string decoding to an object. Each file in `Blocks` must contain a JSON object: if it has `content`, the same rule applies; otherwise, the whole object is scanned for references. A non-JSON file in `Blocks` stops the analysis, even if its extension is not `.json`.
 
 ### Default path
 
@@ -66,28 +68,48 @@ Once the link is configured, `npm start` also works. The `start.sh` script also 
 node cleaner.js --help
 ```
 
+### Command-line options
+
+| Option | Behavior |
+| --- | --- |
+| `--data FOLDER` | Use the specified device root or working copy. Relative paths are resolved from the current working directory; `start.sh` first changes to the project folder. |
+| `--help` | Print usage information and exit without scanning the device. |
+
+Console messages, help, and confirmation prompts are currently in Italian. There are no separate list/delete modes, automatic confirmation flags, backup options, or language options.
+
 ## Plan and confirmations
 
 There is a single workflow: first, the complete plan is displayed, grouped into Impulse Responses, Amp Clones, and Neural Amp Modeler (`.nam`), with a list and count of candidate files. Then, for each non-empty category, the utility asks in Italian: `vuoi cancellare definitivamente N file? [s/N]` ("Do you want to permanently delete N files?").
 
-Reply `s`, `si`, or `sì` to delete, or `n`, `no`, or Enter to skip the category. When input ends, the operation stops without any further deletions. Categories with no candidates are shown as having 0 files and skipped.
+Reply `s`, `si`, or `sì` to delete, or `n`, `no`, or Enter to skip the category. Answers ignore surrounding whitespace and letter case. Other answers, including `y` and `yes`, repeat the prompt without authorizing deletion. When input ends, the operation stops without any further deletions. Categories with no candidates are shown as having 0 files and skipped. If the initial plan has no candidates at all, the utility exits immediately.
 
 All rigs are preserved and protect the resources they use. Setlists are not read and are not required. The plan for IRs, Amp Clones, and NAM models is recalculated and displayed before the respective confirmation.
 
+To display the initial plan without deleting anything, run the utility and decline every category. On macOS or Linux, you can also end input immediately:
+
+```sh
+node cleaner.js --data "/path/to/device" < /dev/null
+```
+
+The initial plan lists candidate paths and file counts, not disk-space estimates. Candidate contents are hashed only when their category is reached, so generating the initial plan does not read every unused model in full.
+
 ## Deletion
 
-Deletion is permanent: no backup is created. The previous `list` and `delete` modes and the `--backup` option are no longer available.
+Deletion is permanent: files are removed directly, with no backup, Trash, or undo.
 
-Do not modify rigs or presets or disconnect the device during the operation. Dependencies and candidate file contents are rechecked before each deletion. If a deletion fails, execution stops and reports the number of files already deleted; those files are not restored. Fingerprints of the rigs and presets read during the latest analysis are rechecked before deletion begins; each candidate is checked again immediately before removal. The utility does not hold an exclusive filesystem lock, and the operation is not an atomic transaction.
+Do not modify rigs or presets or disconnect the device during the operation. After a category is confirmed, the utility scans dependencies again and checks that its candidate list has not changed. It compares candidate contents against their SHA-256 fingerprints and rechecks the fingerprints of the rig and preset bytes read during that final scan before deleting any files in the category.
+
+Immediately before each removal, the candidate's resolved path and contents are checked again. Dependencies are not rescanned between individual removals. If removal or subsequent empty-folder cleanup fails, execution stops and reports the number of files already deleted in that category; those files are not restored. Completed deletions in earlier categories are also retained. The utility does not hold an exclusive filesystem lock, and the operation is not an atomic transaction.
 
 ## Checks
 
-- Malformed JSON, unrecognized structures, missing required folders, and internal symbolic links stop the analysis.
-- JSON inside `content` is parsed; recognized paths are matched exactly. For references containing only a filename, all files with that name are preserved.
-- References are compared case-insensitively with Unicode normalization. Percent-encoded sequences are considered both literally and decoded, preserving both matches in ambiguous cases. Future formats that encode dependencies differently require a parser update.
-- `Impulse Responses/HeadRush`, `Impulse Responses/Choptones`, and `Amp Clones/HeadRush` are protected. The top-level folders are not deleted.
-- Empty subfolders are cleaned up only after a successful deletion. Hidden files and macOS metadata are preserved. Hidden rigs and presets are still analyzed to protect their dependencies; `.DS_Store` and `._*` metadata files are ignored.
-- Scenes/presets in nested JSON and fields outside `content` are also examined. Presets in `Blocks` are always preserved and protect all their recognized dependencies, even if they are not used in rigs.
+- Malformed JSON, invalid `content`, missing or ambiguous library folders, and symbolic links encountered in scanned locations stop the analysis. The device root itself may be a symbolic link; library folders must be ordinary directories. Excluded hidden resource entries and protected folders are not traversed.
+- References are extracted from string values in JSON, including fields outside `content`, nested objects and arrays, and serialized JSON strings such as scenes. Excessive nesting or malformed strings recognized as nested JSON stop the analysis. This is string matching, not complete validation of every device-specific rig or preset schema.
+- A reference containing a library folder name, such as `Impulse Responses/A/Cab.wav`, must match the path within that library, with or without the extension. References without a library folder name also match by filename or filename without extension, preserving all matches even if the reference includes a different parent path. For example, `Cab` protects every `Cab.wav` in the IR library.
+- References are compared case-insensitively with Unicode NFC normalization, backslash-to-slash conversion, and path normalization. Percent-encoded sequences are considered both literally and decoded, preserving both matches in ambiguous cases. Future formats that encode dependencies differently require a parser update.
+- `Impulse Responses/HeadRush`, `Impulse Responses/Choptones`, and `Amp Clones/HeadRush` are excluded from scanning and deletion, with case-insensitive matching of these immediate child names. The top-level library folders are not deleted.
+- Empty non-hidden subfolders in a category are cleaned up only after that category successfully deletes at least one file. This can also remove folders that were already empty. Hidden files and macOS metadata are preserved, so folders containing them remain.
+- Presets in `Blocks` are always preserved and protect all their recognized dependencies, even if they are not used in rigs. Resources referenced by any rig remain protected regardless of setlist membership or references between rigs.
 - Before deleting IRs, Amp Clones, or NAM models, verification considers all rigs on the device.
 - The Neural Amp Modeler category recursively searches for `.nam` files in the device's `Neural Amp Modeler` folder, preserving referenced files and all files with other extensions. If the folder is absent, the category shows 0 files. SuperClones is not cleaned. The binary `.ac` and `.sc` formats are not interpreted as containers of additional dependencies: protection covers references recognized in rig and preset JSON, not any references inside opaque formats.
 
