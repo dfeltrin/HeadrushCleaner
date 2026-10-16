@@ -2,13 +2,21 @@
 
 Utility Node.js per individuare IR/Amp Clones/modelli NAM non referenziati da alcun rig né dai preset salvati in `Blocks`.
 
+**Stato: sperimentale.** La compatibilità con tutti i dispositivi, firmware e formati di rig/preset non è garantita. Nuovi formati possono richiedere aggiornamenti al parser delle dipendenze.
+
+Progetto indipendente, non affiliato, approvato o supportato da HeadRush. I marchi citati appartengono ai rispettivi titolari.
+
 Tutti i rig e i preset vengono conservati. La cancellazione delle risorse inutilizzate richiede una conferma separata per ogni tipologia ed è definitiva, senza backup automatico.
+
+## Prima di iniziare
+
+**Crea un backup manuale completo del contenuto del dispositivo e verifica che la copia sia leggibile prima di usare l'utility.** Conserva il backup in una cartella separata da quella che intendi ripulire.
+
+Per una prima prova, usa `--data` su una copia di lavoro del contenuto del dispositivo, distinta dal backup. Controlla l'elenco dei candidati prima di confermare ogni tipologia: rispondi `n` o premi Invio per saltarla. I controlli automatici coprono i riferimenti riconosciuti dal parser e non sostituiscono il backup.
 
 ## Requisiti e installazione
 
 Richiede Node.js 22 o successivo e l'accesso in lettura e scrittura alla cartella del dispositivo. Non richiede pacchetti npm né Docker: non serve eseguire `npm install`.
-
-Il repository è privato: per clonarlo devi avere accesso ed essere autenticato su GitHub.
 
 ```sh
 git clone https://github.com/dfeltrin/HeadrushCleaner.git
@@ -106,6 +114,8 @@ npm test
 ```
 
 I test usano cartelle temporanee e non richiedono il dispositivo collegato. Verificano conferme, conservazione delle dipendenze, gestione dei cambiamenti durante l'analisi e interruzioni in caso di errore.
+
+Il superamento dei test non certifica la compatibilità con ogni dispositivo o versione del firmware.
 
 ## Risoluzione dei problemi
 
