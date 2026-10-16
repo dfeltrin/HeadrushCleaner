@@ -1,22 +1,22 @@
 # HeadRush Cleaner
 
-Utility Node.js per individuare IR/Amp Clones/modelli NAM non referenziati da alcun rig né dai preset salvati in `Blocks`.
+Node.js utility for finding IRs, Amp Clones, and NAM models that are not referenced by any rig or by presets saved in `Blocks`.
 
-**Stato: sperimentale.** La compatibilità con tutti i dispositivi, firmware e formati di rig/preset non è garantita. Nuovi formati possono richiedere aggiornamenti al parser delle dipendenze.
+**Status: experimental.** Compatibility with all devices, firmware versions, and rig/preset formats is not guaranteed. New formats may require updates to the dependency parser.
 
-Progetto indipendente, non affiliato, approvato o supportato da HeadRush. I marchi citati appartengono ai rispettivi titolari.
+This is an independent project, not affiliated with, endorsed by, or supported by HeadRush. All trademarks mentioned belong to their respective owners.
 
-Tutti i rig e i preset vengono conservati. La cancellazione delle risorse inutilizzate richiede una conferma separata per ogni tipologia ed è definitiva, senza backup automatico.
+All rigs and presets are preserved. Deleting unused resources requires separate confirmation for each category and is permanent, with no automatic backup.
 
-## Prima di iniziare
+## Before you begin
 
-**Crea un backup manuale completo del contenuto del dispositivo e verifica che la copia sia leggibile prima di usare l'utility.** Conserva il backup in una cartella separata da quella che intendi ripulire.
+**Create a complete manual backup of the device's contents and verify that the copy is readable before using the utility.** Keep the backup in a separate folder from the one you intend to clean.
 
-Per una prima prova, usa `--data` su una copia di lavoro del contenuto del dispositivo, distinta dal backup. Controlla l'elenco dei candidati prima di confermare ogni tipologia: rispondi `n` o premi Invio per saltarla. I controlli automatici coprono i riferimenti riconosciuti dal parser e non sostituiscono il backup.
+For an initial trial, use `--data` with a working copy of the device's contents, separate from the backup. Review the candidate list before confirming each category: reply `n` or press Enter to skip it. Automatic checks cover references recognized by the parser and do not replace a backup.
 
-## Requisiti e installazione
+## Requirements and installation
 
-Richiede Node.js 22 o successivo e l'accesso in lettura e scrittura alla cartella del dispositivo. Non richiede pacchetti npm né Docker: non serve eseguire `npm install`.
+Requires Node.js 22 or later and read/write access to the device folder. No npm packages or Docker are required: there is no need to run `npm install`.
 
 ```sh
 git clone https://github.com/dfeltrin/HeadrushCleaner.git
@@ -24,103 +24,103 @@ cd HeadrushCleaner
 node --version
 ```
 
-## Avvio rapido
+## Quick start
 
-Collega la HeadRush via USB e verifica che il volume sia montato. Su macOS, se il volume si chiama `HeadRush`, avvia:
+Connect your HeadRush via USB and make sure the volume is mounted. On macOS, if the volume is named `HeadRush`, run:
 
 ```sh
 ./start.sh --data /Volumes/HeadRush
 ```
 
-In alternativa, usa direttamente Node.js o npm; adatta il percorso al tuo dispositivo e usa le virgolette se contiene spazi:
+Alternatively, use Node.js or npm directly; adjust the path to match your device and use quotation marks if it contains spaces:
 
 ```sh
-node cleaner.js --data "/percorso/del/dispositivo"
-npm start -- --data "/percorso/del/dispositivo"
+node cleaner.js --data "/path/to/device"
+npm start -- --data "/path/to/device"
 ```
 
-Il percorso deve indicare la cartella che contiene le librerie, non una singola sottocartella:
+The path must point to the folder containing the libraries, not to an individual subfolder:
 
-| Cartella | Contenuto analizzato | Presenza |
+| Folder | Contents analyzed | Required |
 | --- | --- | --- |
-| `Rigs` | Rig `.rig` e relativi riferimenti | Obbligatoria |
-| `Impulse Responses` | Risorse `.wav` | Obbligatoria |
-| `Amp Clones` | Risorse `.ac` | Obbligatoria |
-| `Neural Amp Modeler` | Risorse `.nam` | Facoltativa |
-| `Blocks` | Preset salvati in formato JSON | Facoltativa |
+| `Rigs` | `.rig` rigs and their references | Yes |
+| `Impulse Responses` | `.wav` resources | Yes |
+| `Amp Clones` | `.ac` resources | Yes |
+| `Neural Amp Modeler` | `.nam` resources | No |
+| `Blocks` | Presets saved in JSON format | No |
 
-I nomi delle cartelle vengono riconosciuti anche con maiuscole/minuscole diverse.
+Folder names are matched case-insensitively.
 
-### Percorso predefinito
+### Default path
 
-Senza `--data`, l'utility cerca `HeadRush` nella cartella del progetto. Il collegamento locale non è incluso nel repository. Su macOS o Linux puoi crearlo dopo il clone:
+Without `--data`, the utility looks for `HeadRush` in the project folder. The local symbolic link is not included in the repository. On macOS or Linux, you can create it after cloning:
 
 ```sh
 ln -s /Volumes/HeadRush HeadRush
 ./start.sh
 ```
 
-Una volta configurato il collegamento, funziona anche `npm start`. Lo script `start.sh` funziona anche se chiamato da un'altra directory. Per vedere la sintassi disponibile:
+Once the link is configured, `npm start` also works. The `start.sh` script also works when called from another directory. To see the available syntax:
 
 ```sh
 node cleaner.js --help
 ```
 
-## Piano e conferme
+## Plan and confirmations
 
-Esiste un unico flusso di esecuzione: prima viene mostrato il piano completo, suddiviso in Impulse Responses, Amp Clones e Neural Amp Modeler (`.nam`), con elenco e numero dei file candidati. Poi viene chiesto, per ciascuna tipologia non vuota: `vuoi cancellare definitivamente N file? [s/N]`.
+There is a single workflow: first, the complete plan is displayed, grouped into Impulse Responses, Amp Clones, and Neural Amp Modeler (`.nam`), with a list and count of candidate files. Then, for each non-empty category, the utility asks in Italian: `vuoi cancellare definitivamente N file? [s/N]` ("Do you want to permanently delete N files?").
 
-Rispondere `s`, `si` o `sì` per cancellare, oppure `n`, `no` o Invio per saltare la tipologia. Al termine dell'input l'operazione si interrompe senza ulteriori cancellazioni. Le tipologie senza candidati vengono indicate con 0 file e saltate.
+Reply `s`, `si`, or `sì` to delete, or `n`, `no`, or Enter to skip the category. When input ends, the operation stops without any further deletions. Categories with no candidates are shown as having 0 files and skipped.
 
-Tutti i rig vengono conservati e proteggono le risorse che utilizzano. Le setlist non vengono lette e non sono richieste. Il piano di IR, Amp Clones e NAM viene ricalcolato e mostrato prima della relativa conferma.
+All rigs are preserved and protect the resources they use. Setlists are not read and are not required. The plan for IRs, Amp Clones, and NAM models is recalculated and displayed before the respective confirmation.
 
-## Cancellazione
+## Deletion
 
-La cancellazione è definitiva: non viene creato alcun backup. Le precedenti modalità `list` e `delete` e l'opzione `--backup` non sono più disponibili.
+Deletion is permanent: no backup is created. The previous `list` and `delete` modes and the `--backup` option are no longer available.
 
-Durante l'operazione non modificare rig o preset e non scollegare il dispositivo. Prima di ogni cancellazione vengono ricontrollati dipendenze e contenuti dei candidati. Se una cancellazione fallisce, l'esecuzione si interrompe e riporta il numero di file già cancellati, che non vengono ripristinati. Le impronte dei rig e dei preset letti nell'ultima analisi vengono ricontrollate prima di iniziare; ogni candidato viene verificato nuovamente immediatamente prima della sua rimozione. L'utility non dispone di un blocco esclusivo del filesystem e non è una transazione atomica.
+Do not modify rigs or presets or disconnect the device during the operation. Dependencies and candidate file contents are rechecked before each deletion. If a deletion fails, execution stops and reports the number of files already deleted; those files are not restored. Fingerprints of the rigs and presets read during the latest analysis are rechecked before deletion begins; each candidate is checked again immediately before removal. The utility does not hold an exclusive filesystem lock, and the operation is not an atomic transaction.
 
-## Controlli
+## Checks
 
-- JSON malformati, strutture non riconosciute, cartelle obbligatorie mancanti e collegamenti simbolici interni interrompono l'analisi.
-- Il JSON interno a `content` viene analizzato; i percorsi riconosciuti vengono confrontati esattamente. Per riferimenti con il solo nome vengono conservati tutti gli omonimi.
-- I riferimenti vengono confrontati ignorando maiuscole/minuscole e normalizzando Unicode. Le sequenze percentuali vengono considerate sia letteralmente sia decodificate, conservando entrambe le corrispondenze in caso di ambiguità. Formati futuri che codifichino diversamente le dipendenze richiedono un aggiornamento del parser.
-- `Impulse Responses/HeadRush`, `Impulse Responses/Choptones` e `Amp Clones/HeadRush` sono protette. Le cartelle principali non vengono eliminate.
-- La pulizia delle sottocartelle vuote avviene solo dopo una cancellazione riuscita. File nascosti e metadati macOS vengono conservati. I rig e i preset nascosti vengono comunque analizzati per proteggere le loro dipendenze; i metadati `.DS_Store` e `._*` vengono ignorati.
-- Vengono esaminati anche scene/preset in JSON annidato e campi esterni a `content`. I preset in `Blocks` sono sempre conservati e proteggono tutte le loro dipendenze riconosciute, anche se non usati nei rig.
-- Prima di cancellare IR, Amp Clones o NAM, la verifica considera tutti i rig presenti sul dispositivo.
-- La categoria Neural Amp Modeler cerca ricorsivamente i file `.nam` nella cartella `Neural Amp Modeler` del dispositivo, conservando quelli referenziati e tutti i file di altre estensioni. Se la cartella è assente, la categoria mostra 0 file. SuperClones non viene ripulita. I formati binari `.ac` e `.sc` non vengono interpretati come contenitori di ulteriori dipendenze: la protezione copre i riferimenti riconosciuti nei JSON di rig e preset, non eventuali riferimenti interni a formati opachi.
+- Malformed JSON, unrecognized structures, missing required folders, and internal symbolic links stop the analysis.
+- JSON inside `content` is parsed; recognized paths are matched exactly. For references containing only a filename, all files with that name are preserved.
+- References are compared case-insensitively with Unicode normalization. Percent-encoded sequences are considered both literally and decoded, preserving both matches in ambiguous cases. Future formats that encode dependencies differently require a parser update.
+- `Impulse Responses/HeadRush`, `Impulse Responses/Choptones`, and `Amp Clones/HeadRush` are protected. The top-level folders are not deleted.
+- Empty subfolders are cleaned up only after a successful deletion. Hidden files and macOS metadata are preserved. Hidden rigs and presets are still analyzed to protect their dependencies; `.DS_Store` and `._*` metadata files are ignored.
+- Scenes/presets in nested JSON and fields outside `content` are also examined. Presets in `Blocks` are always preserved and protect all their recognized dependencies, even if they are not used in rigs.
+- Before deleting IRs, Amp Clones, or NAM models, verification considers all rigs on the device.
+- The Neural Amp Modeler category recursively searches for `.nam` files in the device's `Neural Amp Modeler` folder, preserving referenced files and all files with other extensions. If the folder is absent, the category shows 0 files. SuperClones is not cleaned. The binary `.ac` and `.sc` formats are not interpreted as containers of additional dependencies: protection covers references recognized in rig and preset JSON, not any references inside opaque formats.
 
 ## Docker
 
-In alternativa all'installazione locale di Node.js, puoi usare Docker con Compose. Esegui dalla cartella del progetto:
+As an alternative to installing Node.js locally, you can use Docker with Compose. Run from the project folder:
 
 ```sh
 docker compose run --rm cleaner
 ```
 
-Usa lo stesso flusso interattivo e monta per impostazione predefinita `/Volumes/HeadRush`. Per indicare un percorso diverso, su macOS o Linux:
+It uses the same interactive workflow and mounts `/Volumes/HeadRush` by default. To specify a different path on macOS or Linux:
 
 ```sh
-HEADRUSH_PATH="/percorso/del/dispositivo" docker compose run --rm cleaner
+HEADRUSH_PATH="/path/to/device" docker compose run --rm cleaner
 ```
 
-Il dispositivo è montato in lettura e scrittura e il percorso deve già esistere ed essere accessibile a Docker. Non è necessario avviare Docker con `sudo` o installare dipendenze nel container.
+The device is mounted with read/write access, and the path must already exist and be accessible to Docker. There is no need to run Docker with `sudo` or install dependencies in the container.
 
-## Verifica del progetto
+## Project verification
 
 ```sh
 npm test
 ```
 
-I test usano cartelle temporanee e non richiedono il dispositivo collegato. Verificano conferme, conservazione delle dipendenze, gestione dei cambiamenti durante l'analisi e interruzioni in caso di errore.
+The tests use temporary folders and do not require a connected device. They check confirmations, dependency preservation, handling of changes during analysis, and stopping on errors.
 
-Il superamento dei test non certifica la compatibilità con ogni dispositivo o versione del firmware.
+Passing the tests does not certify compatibility with every device or firmware version.
 
-## Risoluzione dei problemi
+## Troubleshooting
 
-- **Cartella HeadRush non raggiungibile:** controlla collegamento USB, montaggio del volume e percorso `--data`. Dopo un nuovo clone, usa un percorso esplicito oppure crea il collegamento `HeadRush` descritto sopra.
-- **Cartella mancante o ambigua:** verifica che `--data` punti alla cartella principale del dispositivo e che contenga le tre librerie obbligatorie, senza duplicati che differiscono solo per maiuscole/minuscole.
-- **JSON non leggibile o contenuto non riconosciuto:** controlla il file indicato nell'errore. L'utility interrompe l'analisi se non riesce a interpretare rig o preset.
-- **Dipendenze cambiate o file modificato:** interrompi le modifiche al dispositivo ed esegui nuovamente l'utility per ottenere un piano aggiornato.
-- **Operazione interrotta durante la cancellazione:** leggi il conteggio dei file già cancellati nel messaggio di errore; quei file non vengono ripristinati.
+- **HeadRush folder inaccessible:** check the USB connection, volume mount, and `--data` path. After a fresh clone, use an explicit path or create the `HeadRush` link described above.
+- **Missing or ambiguous folder:** make sure `--data` points to the device's root folder and that it contains the three required libraries, with no duplicates differing only in letter case.
+- **Unreadable JSON or unrecognized content:** check the file identified in the error. The utility stops the analysis if it cannot interpret rigs or presets.
+- **Dependencies changed or file modified:** stop making changes to the device and run the utility again to obtain an updated plan.
+- **Operation interrupted during deletion:** read the count of files already deleted in the error message; those files are not restored.
