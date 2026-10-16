@@ -1,0 +1,11 @@
+{
+  "name": "headrush-cleaner",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Pulizia HeadRush con piano e conferma per tipologia",
+  "scripts": {
+    "start": "node cleaner.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=22" }
+}

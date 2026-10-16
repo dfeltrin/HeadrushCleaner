@@ -1,0 +1,18 @@
+services:
+  cleaner:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+        read_only: true
+      - type: bind
+        source: ${HEADRUSH_PATH:-/Volumes/HeadRush}
+        target: /data
+        bind:
+          create_host_path: false
+    entrypoint: ["node", "cleaner.js"]
+    stdin_open: true
+    tty: true
+    command: ["--data", "/data"]
