@@ -2,18 +2,63 @@
 
 Utility Node.js per individuare IR/Amp Clones/modelli NAM non referenziati da alcun rig né dai preset salvati in `Blocks`.
 
-## Uso
+Tutti i rig e i preset vengono conservati. La cancellazione delle risorse inutilizzate richiede una conferma separata per ogni tipologia ed è definitiva, senza backup automatico.
 
-Richiede Node.js 22 o successivo. Non richiede pacchetti npm né Docker.
+## Requisiti e installazione
+
+Richiede Node.js 22 o successivo e l'accesso in lettura e scrittura alla cartella del dispositivo. Non richiede pacchetti npm né Docker: non serve eseguire `npm install`.
+
+Il repository è privato: per clonarlo devi avere accesso ed essere autenticato su GitHub.
 
 ```sh
-./start.sh
-./start.sh --data /Volumes/HeadRush
-npm start
-npm test
+git clone https://github.com/dfeltrin/HeadrushCleaner.git
+cd HeadrushCleaner
+node --version
 ```
 
-Il percorso predefinito è il collegamento `HeadRush` nella cartella del progetto. Se non è raggiungibile, l'utility si interrompe con un messaggio che invita a controllare il collegamento USB, il montaggio del volume e il percorso `--data`. Lo script di avvio funziona anche se chiamato da un'altra directory.
+## Avvio rapido
+
+Collega la HeadRush via USB e verifica che il volume sia montato. Su macOS, se il volume si chiama `HeadRush`, avvia:
+
+```sh
+./start.sh --data /Volumes/HeadRush
+```
+
+In alternativa, usa direttamente Node.js o npm; adatta il percorso al tuo dispositivo e usa le virgolette se contiene spazi:
+
+```sh
+node cleaner.js --data "/percorso/del/dispositivo"
+npm start -- --data "/percorso/del/dispositivo"
+```
+
+Il percorso deve indicare la cartella che contiene le librerie, non una singola sottocartella:
+
+| Cartella | Contenuto analizzato | Presenza |
+| --- | --- | --- |
+| `Rigs` | Rig `.rig` e relativi riferimenti | Obbligatoria |
+| `Impulse Responses` | Risorse `.wav` | Obbligatoria |
+| `Amp Clones` | Risorse `.ac` | Obbligatoria |
+| `Neural Amp Modeler` | Risorse `.nam` | Facoltativa |
+| `Blocks` | Preset salvati in formato JSON | Facoltativa |
+
+I nomi delle cartelle vengono riconosciuti anche con maiuscole/minuscole diverse.
+
+### Percorso predefinito
+
+Senza `--data`, l'utility cerca `HeadRush` nella cartella del progetto. Il collegamento locale non è incluso nel repository. Su macOS o Linux puoi crearlo dopo il clone:
+
+```sh
+ln -s /Volumes/HeadRush HeadRush
+./start.sh
+```
+
+Una volta configurato il collegamento, funziona anche `npm start`. Lo script `start.sh` funziona anche se chiamato da un'altra directory. Per vedere la sintassi disponibile:
+
+```sh
+node cleaner.js --help
+```
+
+## Piano e conferme
 
 Esiste un unico flusso di esecuzione: prima viene mostrato il piano completo, suddiviso in Impulse Responses, Amp Clones e Neural Amp Modeler (`.nam`), con elenco e numero dei file candidati. Poi viene chiesto, per ciascuna tipologia non vuota: `vuoi cancellare definitivamente N file? [s/N]`.
 
@@ -40,8 +85,32 @@ Durante l'operazione non modificare rig o preset e non scollegare il dispositivo
 
 ## Docker
 
+In alternativa all'installazione locale di Node.js, puoi usare Docker con Compose. Esegui dalla cartella del progetto:
+
 ```sh
 docker compose run --rm cleaner
 ```
 
-Usa lo stesso flusso interattivo. Il dispositivo è montato in lettura e scrittura e deve già esistere. Su sistemi diversi da macOS impostare `HEADRUSH_PATH` al percorso corretto. Non è necessario avviare Docker con `sudo` o installare dipendenze nel container.
+Usa lo stesso flusso interattivo e monta per impostazione predefinita `/Volumes/HeadRush`. Per indicare un percorso diverso, su macOS o Linux:
+
+```sh
+HEADRUSH_PATH="/percorso/del/dispositivo" docker compose run --rm cleaner
+```
+
+Il dispositivo è montato in lettura e scrittura e il percorso deve già esistere ed essere accessibile a Docker. Non è necessario avviare Docker con `sudo` o installare dipendenze nel container.
+
+## Verifica del progetto
+
+```sh
+npm test
+```
+
+I test usano cartelle temporanee e non richiedono il dispositivo collegato. Verificano conferme, conservazione delle dipendenze, gestione dei cambiamenti durante l'analisi e interruzioni in caso di errore.
+
+## Risoluzione dei problemi
+
+- **Cartella HeadRush non raggiungibile:** controlla collegamento USB, montaggio del volume e percorso `--data`. Dopo un nuovo clone, usa un percorso esplicito oppure crea il collegamento `HeadRush` descritto sopra.
+- **Cartella mancante o ambigua:** verifica che `--data` punti alla cartella principale del dispositivo e che contenga le tre librerie obbligatorie, senza duplicati che differiscono solo per maiuscole/minuscole.
+- **JSON non leggibile o contenuto non riconosciuto:** controlla il file indicato nell'errore. L'utility interrompe l'analisi se non riesce a interpretare rig o preset.
+- **Dipendenze cambiate o file modificato:** interrompi le modifiche al dispositivo ed esegui nuovamente l'utility per ottenere un piano aggiornato.
+- **Operazione interrotta durante la cancellazione:** leggi il conteggio dei file già cancellati nel messaggio di errore; quei file non vengono ripristinati.
